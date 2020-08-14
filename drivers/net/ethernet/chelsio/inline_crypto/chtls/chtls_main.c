@@ -3,6 +3,8 @@
  * Copyright (c) 2018 Chelsio Communications, Inc.
  *
  * Written by: Atul Gupta (atul.gupta@chelsio.com)
+ * 	       Venkatesh Ellapu (venkatesh.e@chelsio.com)
+ *             Vinay Kumar Yadav (vinay.yadav@chelsio.com)
  */
 #include <linux/kernel.h>
 #include <linux/module.h>

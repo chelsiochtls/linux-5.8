@@ -564,6 +564,12 @@ enum {
 	PRIV_FLAG_PORT_TX_VM_BIT,
 };
 
+enum cxgb4_netdev_tls_ops {
+	CXGB4_TLSDEV_OPS  = 1,
+	CXGB4_XFRMDEV_OPS
+};
+
+
 #define PRIV_FLAG_PORT_TX_VM		BIT(PRIV_FLAG_PORT_TX_VM_BIT)
 
 #define PRIV_FLAGS_ADAP			0
@@ -1101,6 +1107,9 @@ struct adapter {
 	struct cxgb4_tc_u32_table *tc_u32;
 	struct chcr_ktls chcr_ktls;
 	struct chcr_stats_debug chcr_stats;
+#if IS_ENABLED(CONFIG_CHELSIO_IPSEC_INLINE)
+	struct chipsec_stats_debug chipsec_stats;
+#endif
 
 	/* TC flower offload */
 	bool tc_flower_initialized;
