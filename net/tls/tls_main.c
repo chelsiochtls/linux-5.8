@@ -705,7 +705,7 @@ static int tls_init(struct sock *sk)
 	tls_build_proto(sk);
 
 #ifdef CONFIG_TLS_TOE
-	if (tls_toe_bypass(sk))
+	if (sk->sk_state == TCP_CLOSE && tls_toe_bypass(sk))
 		return 0;
 #endif
 
@@ -733,6 +733,24 @@ out:
 	write_unlock_bh(&sk->sk_callback_lock);
 	return rc;
 }
+
+#ifdef CONFIG_TLS_TOE
+void tls_clone(const struct request_sock *req,
+	       struct sock *newsk, const gfp_t priority)
+{
+	struct tls_context *ctx = tls_get_ctx(newsk);
+	struct inet_connection_sock *icsk = inet_csk(newsk);
+
+	/* In presence of TLS TOE devices, TLS ulp is initialized on listen
+	 * socket so lets child socket back to non tls ULP mode because tcp
+	 * connections can happen in non TLS TOE mode.
+	 */
+	newsk->sk_prot = ctx->sk_proto;
+	newsk->sk_destruct = ctx->sk_destruct;
+	icsk->icsk_ulp_ops = NULL;
+	rcu_assign_pointer(icsk->icsk_ulp_data, NULL);
+}
+#endif
 
 static void tls_update(struct sock *sk, struct proto *p,
 		       void (*write_space)(struct sock *sk))
@@ -847,6 +865,9 @@ static struct tcp_ulp_ops tcp_tls_ulp_ops __read_mostly = {
 	.update			= tls_update,
 	.get_info		= tls_get_info,
 	.get_info_size		= tls_get_info_size,
+#ifdef CONFIG_TLS_TOE
+	.clone                  = tls_clone
+#endif
 };
 
 static int __init tls_register(void)
