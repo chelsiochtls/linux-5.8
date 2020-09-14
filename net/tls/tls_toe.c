@@ -48,10 +48,8 @@ static void tls_toe_sk_destruct(struct sock *sk)
 
 	ctx->sk_destruct(sk);
 	/* Free ctx */
-	if(sk->sk_userlocks & SOCK_BINDPORT_LOCK) {
 	rcu_assign_pointer(icsk->icsk_ulp_data, NULL);
 	tls_ctx_free(sk, ctx);
-	}
 }
 
 int tls_toe_bypass(struct sock *sk)
