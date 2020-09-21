@@ -377,6 +377,9 @@ int chtls_setkey(struct chtls_sock *csk, u32 keylen,
 	kwr->sc_imm.len = cpu_to_be32(klen);
 
 	lock_sock(sk);
+	if (unlikely(csk_flag(sk, CSK_ABORT_SHUTDOWN)))
+		goto out_notcb;
+
 	/* key info */
 	kctx = (struct _key_ctx *)(kwr + 1);
 	ret = chtls_key_info(csk, kctx, keylen, optname, cipher_type);
