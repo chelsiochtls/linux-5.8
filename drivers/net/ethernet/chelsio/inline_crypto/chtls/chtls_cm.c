@@ -1109,6 +1109,7 @@ static struct sock *chtls_recv_sock(struct sock *lsk,
 				    const struct cpl_pass_accept_req *req,
 				    struct chtls_dev *cdev)
 {
+	struct adapter *adap = pci_get_drvdata(cdev->pdev);
 	struct neighbour *n = NULL;
 	struct inet_sock *newinet;
 	const struct iphdr *iph;
@@ -1118,9 +1119,10 @@ static struct sock *chtls_recv_sock(struct sock *lsk,
 	struct dst_entry *dst;
 	struct tcp_sock *tp;
 	struct sock *newsk;
+	bool found = false;
 	u16 port_id;
 	int rxq_idx;
-	int step;
+	int step, i;
 
 	iph = (const struct iphdr *)network_hdr;
 	newsk = tcp_create_openreq_child(lsk, oreq, cdev->askb);
@@ -1152,7 +1154,7 @@ static struct sock *chtls_recv_sock(struct sock *lsk,
 		n = dst_neigh_lookup(dst, &ip6h->saddr);
 #endif
 	}
-	if (!n)
+	if (!n || !n->dev)
 		goto free_sk;
 
 	ndev = n->dev;
@@ -1160,6 +1162,13 @@ static struct sock *chtls_recv_sock(struct sock *lsk,
 		goto free_dst;
 	if (is_vlan_dev(ndev))
 		ndev = vlan_dev_real_dev(ndev);
+
+	for_each_port(adap, i)
+		if (cdev->ports[i] == ndev)
+			found = true;
+
+	if (!found)
+		goto free_dst;
 
 	port_id = cxgb4_port_idx(ndev);
 
@@ -1240,6 +1249,7 @@ static struct sock *chtls_recv_sock(struct sock *lsk,
 free_csk:
 	chtls_sock_release(&csk->kref);
 free_dst:
+	neigh_release(n);
 	dst_release(dst);
 free_sk:
 	inet_csk_prepare_forced_close(newsk);
@@ -1389,7 +1399,7 @@ static void chtls_pass_accept_request(struct sock *sk,
 
 	newsk = chtls_recv_sock(sk, oreq, network_hdr, req, cdev);
 	if (!newsk)
-		goto free_oreq;
+		goto reject;
 
 	if (chtls_get_module(newsk))
 		goto reject;
@@ -1405,8 +1415,6 @@ static void chtls_pass_accept_request(struct sock *sk,
 	kfree_skb(skb);
 	return;
 
-free_oreq:
-	chtls_reqsk_free(oreq);
 reject:
 	mk_tid_release(reply_skb, 0, tid);
 	cxgb4_ofld_send(cdev->lldi->ports[0], reply_skb);
