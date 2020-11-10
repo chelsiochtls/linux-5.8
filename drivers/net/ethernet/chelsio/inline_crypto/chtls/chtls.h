@@ -450,6 +450,13 @@ enum {
 	ULPCB_FLAG_NO_HDR    = 1 << 7,  /* not a ofld wr */
 };
 
+enum {
+/* CPL_SET_TCB_FIELD cookies */
+	TCB_FIELD_COOKIE_DEFAULT = 0,
+	TCB_FIELD_COOKIE_TFLAG   = 1,
+	TCB_FIELD_COOKIE_CONG = 9,
+};
+
 /* The ULP mode/submode of an skbuff */
 #define skb_ulp_mode(skb)  (ULP_SKB_CB(skb)->ulp_mode)
 #define TCP_PAGE(sk)   (sk->sk_frag.page)
@@ -574,7 +581,12 @@ int send_tx_flowc_wr(struct sock *sk, int compl,
 void chtls_tcp_push(struct sock *sk, int flags);
 int chtls_push_frames(struct chtls_sock *csk, int comp);
 int chtls_set_tcb_tflag(struct sock *sk, unsigned int bit_pos, int val);
+void chtls_set_tcb_field_rpl_skb(struct sock *sk, u16 word,
+				 u64 mask, u64 val, u8 cookie,
+				 int through_l2t);
 int chtls_setkey(struct chtls_sock *csk, u32 keylen, u32 mode, int cipher_type);
+int chtls_set_tcb_quiesce(struct sock *sk, int val);
+int chtls_set_quiesce_ctrl(struct sock *sk, int val);
 void skb_entail(struct sock *sk, struct sk_buff *skb, int flags);
 unsigned int keyid_to_addr(int start_addr, int keyid);
 void free_tls_keyid(struct sock *sk);
