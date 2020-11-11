@@ -1220,6 +1220,7 @@ static struct sock *chtls_recv_sock(struct sock *lsk,
 	ctx = tls_get_ctx(lsk);
 	newsk->sk_destruct = ctx->sk_destruct;
 	newsk->sk_prot = lsk->sk_prot;
+	newsk->sk_prot_creator = lsk->sk_prot_creator;
 	inet_csk(newsk)->icsk_ulp_ops = inet_csk(lsk)->icsk_ulp_ops;
 	rcu_assign_pointer(inet_csk(newsk)->icsk_ulp_data, ctx);
 	csk->sk = newsk;
